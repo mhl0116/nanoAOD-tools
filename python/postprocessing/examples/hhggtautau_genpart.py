@@ -125,23 +125,13 @@ class HHggtautauGenLevel(Module):
         if ((status>>5)&1): return True
         else: return False
     
-    def fromH(self, genparticles, genP):
+    def fromH(self, genparticles, genP, origin):
         if (genP.genPartIdxMother > -1):
-            if (genparticles[genP.genPartIdxMother].pdgId==25):
+            if (genparticles[genP.genPartIdxMother].pdgId==25 and genP.pdgId==origin):
                 return True
             else:
-                return self.fromH(genparticles, genparticles[genP.genPartIdxMother])
+                return self.fromH(genparticles, genparticles[genP.genPartIdxMother], origin)
         return False
-    
-    def fromHnoTau(self, genparticles, genP):
-        if (genP.genPartIdxMother > -1):
-            if (genparticles[genP.genPartIdxMother].pdgId==25):
-                return True
-            elif (genparticles[genP.genPartIdxMother].pdgId==22):
-                return self.fromHnoTau(genparticles, genparticles[genP.genPartIdxMother])
-            
-        return False
-                
     
     
     def analyze(self, event):
@@ -195,9 +185,9 @@ class HHggtautauGenLevel(Module):
             
             
             for genP in genParticles:
-                if((genP.pdgId==15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP)):
+                if((genP.pdgId==15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,15)):
                     genHtausPlus=genP
-                if((genP.pdgId==-15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP)):
+                if((genP.pdgId==-15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,-15)):
                     genHtausMinus=genP
                 if((genP.pdgId==13) and self.isTauDecayProduct(genP.statusFlags) and (abs(genParticles[genP.genPartIdxMother].pdgId)==15)):
                     genMuTauPlus.append(genP)
@@ -207,7 +197,7 @@ class HHggtautauGenLevel(Module):
                     genEleTauPlus.append(genP)
                 if((genP.pdgId==-11) and self.isTauDecayProduct(genP.statusFlags) and (abs(genParticles[genP.genPartIdxMother].pdgId)==15)):
                     genEleTauMinus.append(genP)
-                if(genP.pdgId==22 and self.isLastCopy(genP.statusFlags) and self.fromHnoTau(genParticles, genP)):
+                if(genP.pdgId==22 and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,22)):
                     genHphotons.append(genP)
             
                     

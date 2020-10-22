@@ -30,8 +30,17 @@ class HHggtautauProducer(Module):
         self.out.branch("muonNumber",  "I");  
         self.out.branch("electronNumber",  "I");  
         self.out.branch("tauNumber",  "I");  
+        
+        self.out.branch("passedGoodPhotons","B")
+        self.out.branch("passedHPhotons","B")
+        self.out.branch("passedDigammaPair","B")
+        self.out.branch("gHidx",  "I", 2);        
+        
         self.out.branch("tauHidx",  "I", 2);
         self.out.branch("Category",   "I");
+        self.out.branch("Category_lveto",   "I");
+        self.out.branch("Category_tausel",   "I");
+        self.out.branch("Category_pairs",   "I");
         
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -44,66 +53,233 @@ class HHggtautauProducer(Module):
         return (j1+j2).M()
         
     
-    def elid(self, el, wp):
+    def elid(self, el, wp, noiso=False):
         if (wp == "80"):
             return el.mvaFall17V2Iso_WP80
         elif (wp == "90"):
             return el.mvaFall17V2Iso_WP90
+        elif (wp == "80" and noiso==True):
+            return el.mvaFall17V2noIso_WP80
+        elif (wp == "90" and noiso==True):
+            return el.mvaFall17V2noIso_WP90
+        
+        
+    def useLowR9(self, photon, rho, isEB):
+        if (isEB):        
+            if ( (photon.sieie >= 0.015) ): 
+                return False     
+            if ( (photon.trkSumPtHollowConeDR03 >= 6.0) ): 
+                return False     
+            if ( (photon.photonIso - 0.16544*rho >= 4.0) ): 
+                return False      
+        else:
+            if ( (photon.sieie >= 0.035) ): 
+                return False;       
+            if ( (photon.trkSumPtHollowConeDR03 >= 6.0) ): 
+                return False      
+            if ( (photon.photonIso - 0.13212*rho >= 4.0) ): 
+                return False       
+
+        # 0.16544 and 0.13212 are copied from flashggPreselectedDiPhotons_cfi.py
+        return True
 
     
     def analyze(self, event):
         
         """process event, return True (go to next module) or False (fail, go to next event)"""
+        
         electrons = list(Collection(event, "Electron"))
         muons = list(Collection(event, "Muon"))
         #jets = list(Collection(event, "Jet"))        
         taus = list(Collection(event, "Tau"))
+        photons = list(Collection(event, "Photon"))
         
-        tautauMass=-1
+        rho = getattr(event, "fixedGridRhoAll")
+        print rho
+        
+        v1 = ROOT.TLorentzVector()
+        v2 = ROOT.TLorentzVector()
+        
+        passedGoodPhotons=False
+        passedHPhotons=False
+        passedDigammaPair=False
+        
+        gHidx=[-1,-1]
         ggMass=-1
+        
+        pho_EB_highR9 = lambda x : (abs(x.eta) < 1.5 and x.r9 > 0.85)
+        pho_EE_highR9 = lambda x : (abs(x.eta) > 1.5 and x.r9 > 0.9)
+        pho_EB_lowR9 = lambda x : (abs(x.eta) < 1.5 and x.r9 < 0.85 and x.r9 > 0.5 and self.useLowR9(x,rho,True))
+        pho_EE_lowR9 = lambda x : (abs(x.eta) > 1.5 and x.r9 < 0.85 and x.r9 > 0.8 and self.useLowR9(x,rho,False))
+
+        photonsGood = [ph for ph in photons if (ph.electronVeto>=0.5 and (pho_EB_highR9(ph) or pho_EE_highR9(ph) or pho_EB_lowR9(ph) or pho_EE_lowR9(ph)))]
+        if (len(photonsGood)>1):
+            passedGoodPhotons=True
+        
+        photonsForHiggs = [ph for ph in photonsGood if (ph.hoe<0.08 and abs(ph.eta)<2.5 and (abs(ph.eta)<1.442 or abs(ph.eta)>1.566)  and (ph.r9>0.8 or ph.chargedHadronIso<20 or ph.chargedHadronIso/ph.pt<0.3) )]
+        photonsForHiggs=sorted(photonsForHiggs, key=lambda x : x.pt, reverse=True)
+        if (len(photonsForHiggs)>1):
+            passedHPhotons=True
+        
+        #digamma pair
+        if (len(photonsForHiggs)>1 and photonsForHiggs[0].pt >35 and photonsForHiggs[1].pt>25 ):
+            passedDigammaPair=True
+            gHidx[0]=photons.index(photonsForHiggs[0])
+            gHidx[1]=photons.index(photonsForHiggs[1])
+            
+        if (gHidx[0]>=0 and gHidx[1]>=0):
+            v1.SetPtEtaPhiM(photons[gHidx[0]].pt,photons[gHidx[0]].eta,photons[gHidx[0]].phi,0)
+            v2.SetPtEtaPhiM(photons[gHidx[1]].pt,photons[gHidx[1]].eta,photons[gHidx[1]].phi,0)
+            ggMass=(v1+v2).M()
+            
+        tautauMass=-1
         Category = -1
+        Category_lveto = -1
+        Category_tausel = -1
+        Category_pairs = -1
         
-        tElectrons = [x for x in electrons if self.elid(x,"80") and x.pt > 25 and x.pfRelIso03_all < 0.12]      
-        tMuons = [x for x in muons if x.pt > 25 and x.tightId >= 1 and x.pfRelIso04_all < 0.15 and abs(x.dxy) < 0.05 and abs(x.dz) < 0.2]
-        lElectrons = [x for x in electrons if x.pt > 20 and self.elid(x,"90") and x.pfRelIso03_all < 0.15]
-        lMuons = [x for x in muons if x.pt > 20 and x.pfRelIso04_all < 0.25 and abs(x.dxy) < 0.05 and abs(x.dz) < 0.2]
+        #FOR SIGNAL
+        tElectrons = [x for x in electrons if self.elid(x,"80") and x.pt > 25 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.5 ]   
+        #tElectrons = [x for x in electrons if self.elid(x,"80") and x.pt > 25 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.1 ] 
+        #2.1 must be due to the trigger, we don't need it
+        
+        #FOR SIGNAL        
+        tMuons = [x for x in muons if x.pt > 20 and x.tightId >= 1 and x.pfRelIso04_all < 0.15 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.4 ]
+        #tMuons = [x for x in muons if x.pt > 20 and x.tightId >= 1 and x.pfRelIso04_all < 0.15 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.1 ]
+        #2.1 must be due to the trigger, we don't need it
+        
+        #FOR VETOS
+        lElectrons = [x for x in electrons if x.pt > 10 and (self.elid(x,"90") or (x.pfRelIso03_all < 0.3 and self.elid(x,"90", True)))  and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.5 ]
+        lMuons = [x for x in muons if x.pt > 10 and x.pfRelIso04_all < 0.3 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.4]
         
 
-        if (len(tMuons)==1 and len(lElectrons+lMuons)==1):
+        if (len(tMuons)==1):
             Category=1
-        elif (len(tElectrons)==1 and len(lElectrons+lMuons)==1):
+        elif (len(tElectrons)==1):
             Category=2
-        elif(len(lElectrons+lMuons)==0):
+        else:
             Category=3
+            
+        if (len(tMuons)==1 and len(lMuons+lElectrons)==1):
+            Category_lveto=1
+        elif (len(tElectrons)==1 and len(lMuons+lElectrons)==1):
+            Category_lveto=2
+        elif (len(lMuons+lElectrons)==0):
+            Category_lveto=3
 
+        tausForHiggs=[]
+        
+        if Category==1:
+            #muonic decay
+            tausForHiggs = [x for x in taus if (x.pt>20 and 
+                                                abs(x.eta)<2.3  and  
+                                                x.idDecayModeNewDMs and 
+                                                x.idDeepTau2017v2p1VSe>=4 and #VLoose
+                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSmu>=8 and #Tight
+                                                abs(x.dz) < 0.2)] 
+        elif Category==2:
+            #electron decay
+            tausForHiggs = [x for x in taus if (x.pt>20 and 
+                                                abs(x.eta)<2.3  and  
+                                                x.idDecayModeNewDMs and 
+                                                x.idDeepTau2017v2p1VSe>=32 and #Tight
+                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSmu>=8 and #Tight
+                                                abs(x.dz) < 0.2)] 
+        elif Category==3:
+            tausForHiggs = [x for x in taus if (x.pt>20 and 
+                                                abs(x.eta)<2.3  and                        #2.1  due to the trigger, we don't need it
+                                                x.idDecayModeNewDMs and 
+                                                x.idDeepTau2017v2p1VSe>=2 and #VVLoose
+                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSmu>=1 and #VLoose
+                                                abs(x.dz) < 0.2)]
+            
+        
+        if (Category_lveto==1 and len(tausForHiggs)>0):
+            Category_tausel=1
+        elif (Category_lveto==2 and len(tausForHiggs)>0):
+            Category_tausel=2
+        elif (Category_lveto==3 and len(tausForHiggs)>1):
+            Category_tausel=3
+
+        #Tau_idDeepTau2017v2p1VSe	UChar_t	byDeepTau2017v2p1VSe ID working points (deepTau2017v2p1): bitmask 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+        #Tau_idDeepTau2017v2p1VSjet	UChar_t	byDeepTau2017v2p1VSjet ID working points (deepTau2017v2p1): bitmask 1 = VVVLoose, 2 = VVLoose, 4 = VLoose, 8 = Loose, 16 = Medium, 32 = Tight, 64 = VTight, 128 = VVTight
+        #Tau_idDeepTau2017v2p1VSmu	UChar_t	byDeepTau2017v2p1VSmu ID working points (deepTau2017v2p1): bitmask 1 = VLoose, 2 = Loose, 4 = Medium, 8 = Tight
+         
+                
         #if category==-1 return False              
         
         muonNumber = len(tMuons)
-        electronNumber = len(tElectrons)
-        
-        tausForHiggs = [x for x in taus if (x.pt>20 and abs(x.eta)<2.4  and  x.idDecayModeNewDMs and x.idDeepTau2017v2p1VSe and x.idDeepTau2017v2p1VSjet and x.idDeepTau2017v2p1VSmu)]        
-        
+        electronNumber = len(tElectrons)        
         tauNumber = len(tausForHiggs)
        
-        hTaus = sorted(tausForHiggs ,key=lambda x : x.pt, reverse=True)[0:2]
+        
+        #if len(tausForHiggs)>1:
+        #    tausForHiggs=sorted(tausForHiggs, key=lambda x : x.chargedIso, reverse=True)
+        #
+        # SKIP SORTING FOR NOW
                 
         tauHidx=[-1,-1]
         
-        if (Category==3 and len(hTaus)>1):
-            tauHidx[0] = taus.index(hTaus[0])
-            tauHidx[1] = taus.index(hTaus[1])
-        elif (Category<3 and len(hTaus)):
-            tauHidx[0] = taus.index(hTaus[0])
+        if (Category_tausel==1 and len(tausForHiggs)):
+            tauHidx[0] = muons.index(tMuons[0])
+            charge = tMuons[0].charge
+            for j in range(len(tausForHiggs)):
+                if (charge!=tausForHiggs[j].charge):
+                    tauHidx[1] = taus.index(tausForHiggs[j])
+                    
+        elif (Category_tausel==2 and len(tausForHiggs)):
+            tauHidx[0] = electrons.index(tElectrons[0])
+            charge = tElectrons[0].charge
+            for j in range(len(tausForHiggs)):
+                if (charge!=tausForHiggs[j].charge):
+                    tauHidx[1] = taus.index(tausForHiggs[j])
         
-        #much more to do....
+        elif (Category_tausel==3):
+            tauHidx[0] = taus.index(tausForHiggs[0])
+            charge=tausForHiggs[0].charge
+            for j in range(1,len(tausForHiggs)):
+                if (charge!=tausForHiggs[j].charge):
+                    tauHidx[1] = taus.index(tausForHiggs[j])
+            
+        
+        
+        if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==3):
+            Category_pairs=3
+            v1.SetPtEtaPhiM(taus[tauHidx[0]].pt,taus[tauHidx[0]].eta,taus[tauHidx[0]].phi,taus[tauHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            tautauMass=(v1+v2).M()
+        elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==2):
+            Category_pairs=2
+            v1.SetPtEtaPhiM(electrons[tauHidx[0]].pt,electrons[tauHidx[0]].eta,electrons[tauHidx[0]].phi,0.511/1000.)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            tautauMass=(v1+v2).M()
+        elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==1):
+            Category_pairs=1
+            v1.SetPtEtaPhiM(muons[tauHidx[0]].pt,muons[tauHidx[0]].eta,muons[tauHidx[0]].phi,0.1056)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            tautauMass=(v1+v2).M()
+            
 
         self.out.fillBranch("tautauMass",tautauMass)
         self.out.fillBranch("ggMass",ggMass)
         self.out.fillBranch("muonNumber",muonNumber)
         self.out.fillBranch("electronNumber",electronNumber)
         self.out.fillBranch("tauNumber",tauNumber)
+        
+        self.out.fillBranch("passedGoodPhotons",passedGoodPhotons)
+        self.out.fillBranch("passedHPhotons",passedHPhotons)
+        self.out.fillBranch("passedDigammaPair",passedDigammaPair)
+        self.out.fillBranch("gHidx",gHidx)
+        
         self.out.fillBranch("tauHidx",tauHidx)   
         self.out.fillBranch("Category",  Category);
+        self.out.fillBranch("Category_lveto",  Category_lveto);
+        self.out.fillBranch("Category_tausel",  Category_tausel);
+        self.out.fillBranch("Category_pairs",  Category_pairs);
+        
         return True
     
     
