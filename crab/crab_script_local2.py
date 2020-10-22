@@ -18,7 +18,10 @@ from PhysicsTools.NanoAODTools.postprocessing.modules.common.muonScaleResProduce
 
 #p=PostProcessor(".",inputFiles(),"Jet_pt>200",modules=[exampleModuleConstr()],provenance=True,fwkJobReport=True,jsonInput=runsAndLumis())
 
-selection='''Sum$(Photon_pt > 18 && abs(Photon_eta)<2.5) > 1  &&(Sum$(Electron_pt > 10 && abs(Electron_eta<2.4)) || Sum$(Muon_pt > 10 && abs(Muon_eta<2.4)) || Sum$(Tau_pt > 15 && abs(Tau_eta<2.4)) > 1)&& Entry$ < 1000'''
+selection='''Sum$(Photon_pt > 18 && abs(Photon_eta)<2.5) > 1  &&(Sum$(Electron_pt > 10 && abs(Electron_eta<2.5)) || Sum$(Muon_pt > 10 && abs(Muon_eta<2.4)) || Sum$(Tau_pt > 15 && abs(Tau_eta<2.4)) > 1)&& Entry$ < 1000'''
+
+
+#selection='''Entry$ < 1000'''
 
 files=["/hadoop/cms/store/user/hmei/nanoaod_runII/HHggtautau/HHggtautau_Era2018_private_v2_20201005/test_nanoaod_1.root"]
 
