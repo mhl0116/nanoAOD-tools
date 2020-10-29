@@ -6,6 +6,8 @@ from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Collect
 from PhysicsTools.NanoAODTools.postprocessing.framework.datamodel import Object 
 from PhysicsTools.NanoAODTools.postprocessing.framework.eventloop import Module
 
+from PhysicsTools.NanoAODTools.postprocessing.tools import deltaR
+
 class HHggtautauProducer(Module):
     def __init__(self, jetSelection, muSelection, eSelection, data, year="2016"):
         self.jetSel = jetSelection
@@ -26,6 +28,8 @@ class HHggtautauProducer(Module):
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         self.out = wrappedOutputTree
         self.out.branch("tautauMass",  "F");
+        self.out.branch("tautauMassLoose",  "F");
+        self.out.branch("tautauMassAll",  "F");
         self.out.branch("ggMass",  "F");
         self.out.branch("muonNumber",  "I");  
         self.out.branch("electronNumber",  "I");  
@@ -37,10 +41,17 @@ class HHggtautauProducer(Module):
         self.out.branch("gHidx",  "I", 2);        
         
         self.out.branch("tauHidx",  "I", 2);
+        self.out.branch("tauLooseHidx",  "I", 2);
+        self.out.branch("tauAllHidx",  "I", 2);
+        
         self.out.branch("Category",   "I");
         self.out.branch("Category_lveto",   "I");
         self.out.branch("Category_tausel",   "I");
         self.out.branch("Category_pairs",   "I");
+        
+        self.out.branch("Category_LooseTausel",   "I");
+        self.out.branch("Category_LoosePairs",   "I");
+        self.out.branch("Category_AllPairs",   "I");
         
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -133,10 +144,16 @@ class HHggtautauProducer(Module):
             ggMass=(v1+v2).M()
             
         tautauMass=-1
+        tautauMassLoose=-1
+        tautauMassAll=-1
         Category = -1
         Category_lveto = -1
         Category_tausel = -1
         Category_pairs = -1
+        
+        Category_LooseTausel = -1
+        Category_LoosePairs = -1
+        Category_AllPairs = -1
         
         #FOR SIGNAL
         tElectrons = [x for x in electrons if self.elid(x,"80") and x.pt > 25 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.5 ]   
@@ -168,35 +185,51 @@ class HHggtautauProducer(Module):
             Category_lveto=3
 
         tausForHiggs=[]
+        tausForHiggsLoose=[]
         
         if Category==1:
             #muonic decay
-            tausForHiggs = [x for x in taus if (x.pt>20 and 
+            tausForHiggsLoose = [x for x in taus if (x.pt>20 and 
                                                 abs(x.eta)<2.3  and  
                                                 x.idDecayModeNewDMs and 
                                                 x.idDeepTau2017v2p1VSe>=4 and #VLoose
-                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSjet>=8 and #Loose - use to be medium in bbtt
                                                 x.idDeepTau2017v2p1VSmu>=8 and #Tight
-                                                abs(x.dz) < 0.2)] 
+                                                abs(x.dz) < 0.2)]       
+        
         elif Category==2:
             #electron decay
-            tausForHiggs = [x for x in taus if (x.pt>20 and 
+            tausForHiggsLoose = [x for x in taus if (x.pt>20 and 
                                                 abs(x.eta)<2.3  and  
                                                 x.idDecayModeNewDMs and 
                                                 x.idDeepTau2017v2p1VSe>=32 and #Tight
-                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSjet>=8 and #Loose - use to be medium in bbtt
                                                 x.idDeepTau2017v2p1VSmu>=8 and #Tight
                                                 abs(x.dz) < 0.2)] 
+            
+            
+            
         elif Category==3:
-            tausForHiggs = [x for x in taus if (x.pt>20 and 
+            tausForHiggsLoose = [x for x in taus if (x.pt>20 and 
                                                 abs(x.eta)<2.3  and                        #2.1  due to the trigger, we don't need it
                                                 x.idDecayModeNewDMs and 
                                                 x.idDeepTau2017v2p1VSe>=2 and #VVLoose
-                                                x.idDeepTau2017v2p1VSjet>=16 and #Medium
+                                                x.idDeepTau2017v2p1VSjet>=8 and #Loose - use to be medium in bbtt
                                                 x.idDeepTau2017v2p1VSmu>=1 and #VLoose
                                                 abs(x.dz) < 0.2)]
             
+        tausForHiggs=[x for x in tausForHiggsLoose if x.idDeepTau2017v2p1VSjet>=16]
+            
+            
+            
         
+        if (Category_lveto==1 and len(tausForHiggsLoose)>0):
+            Category_LooseTausel=1
+        elif (Category_lveto==2 and len(tausForHiggsLoose)>0):
+            Category_LooseTausel=2
+        elif (Category_lveto==3 and len(tausForHiggsLoose)>1):
+            Category_LooseTausel=3
+            
         if (Category_lveto==1 and len(tausForHiggs)>0):
             Category_tausel=1
         elif (Category_lveto==2 and len(tausForHiggs)>0):
@@ -222,7 +255,10 @@ class HHggtautauProducer(Module):
         # SKIP SORTING FOR NOW
                 
         tauHidx=[-1,-1]
+        tauLooseHidx=[-1,-1]
+        tauAllHidx=[-1,-1]
         
+        #Original selections
         if (Category_tausel==1 and len(tausForHiggs)):
             tauHidx[0] = muons.index(tMuons[0])
             charge = tMuons[0].charge
@@ -238,32 +274,111 @@ class HHggtautauProducer(Module):
                     tauHidx[1] = taus.index(tausForHiggs[j])
         
         elif (Category_tausel==3):
-            tauHidx[0] = taus.index(tausForHiggs[0])
+            tauLooseHidx[0] = taus.index(tausForHiggs[0])
             charge=tausForHiggs[0].charge
             for j in range(1,len(tausForHiggs)):
                 if (charge!=tausForHiggs[j].charge):
-                    tauHidx[1] = taus.index(tausForHiggs[j])
+                    tauLooseHidx[1] = taus.index(tausForHiggs[j])
+        
+        #Loose selections
+        if (Category_LooseTausel==1 and len(tausForHiggsLoose)):
+            tauLooseHidx[0] = muons.index(tMuons[0])
+            charge = tMuons[0].charge
+            for j in range(len(tausForHiggsLoose)):
+                if (charge!=tausForHiggsLoose[j].charge):
+                    tauLooseHidx[1] = taus.index(tausForHiggsLoose[j])
+                    
+        elif (Category_LooseTausel==2 and len(tausForHiggsLoose)):
+            tauLooseHidx[0] = electrons.index(tElectrons[0])
+            charge = tElectrons[0].charge
+            for j in range(len(tausForHiggsLoose)):
+                if (charge!=tausForHiggsLoose[j].charge):
+                    tauLooseHidx[1] = taus.index(tausForHiggsLoose[j])
+        
+        elif (Category_LooseTausel==3):
+            tauLooseHidx[0] = taus.index(tausForHiggsLoose[0])
+            charge=tausForHiggsLoose[0].charge
+            for j in range(1,len(tausForHiggsLoose)):
+                if (charge!=tausForHiggsLoose[j].charge):
+                    tauLooseHidx[1] = taus.index(tausForHiggsLoose[j])
+                    
+        #EVEN LOOSER selections
+        if (Category_lveto==1 and len(taus)):
+            tauAllHidx[0] = muons.index(tMuons[0])
+            charge = tMuons[0].charge
+            for j in range(len(taus)):
+                if (charge!=taus[j].charge and deltaR(tMuons[0], taus[j])>0.2):
+                    tauAllHidx[1] = j
+                    
+        elif (Category_lveto==2 and len(taus)):
+            tauAllHidx[0] = electrons.index(tElectrons[0])
+            charge = tElectrons[0].charge
+            for j in range(len(taus)):
+                if (charge!=taus[j].charge and deltaR(tElectrons[0], taus[j])>0.2):
+                    tauAllHidx[1] = j
+        
+        elif (Category_lveto==3 and len(taus)>1):
+            tauAllHidx[0] = 0
+            charge=taus[0].charge
+            for j in range(1,len(taus)):
+                if (charge!=taus[j].charge):
+                    tauAllHidx[1] = j
             
         
         
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==3):
             Category_pairs=3
             v1.SetPtEtaPhiM(taus[tauHidx[0]].pt,taus[tauHidx[0]].eta,taus[tauHidx[0]].phi,taus[tauHidx[0]].mass)
-            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[1]].mass)
             tautauMass=(v1+v2).M()
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==2):
             Category_pairs=2
             v1.SetPtEtaPhiM(electrons[tauHidx[0]].pt,electrons[tauHidx[0]].eta,electrons[tauHidx[0]].phi,0.511/1000.)
-            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[1]].mass)
             tautauMass=(v1+v2).M()
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==1):
             Category_pairs=1
             v1.SetPtEtaPhiM(muons[tauHidx[0]].pt,muons[tauHidx[0]].eta,muons[tauHidx[0]].phi,0.1056)
-            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauHidx[1]].pt,taus[tauHidx[1]].eta,taus[tauHidx[1]].phi,taus[tauHidx[1]].mass)
             tautauMass=(v1+v2).M()
+            
+        if (tauLooseHidx[0]>=0 and tauLooseHidx[1]>=0 and Category_LooseTausel==3):
+            Category_LoosePairs=3
+            v1.SetPtEtaPhiM(taus[tauLooseHidx[0]].pt,taus[tauLooseHidx[0]].eta,taus[tauLooseHidx[0]].phi,taus[tauLooseHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauLooseHidx[1]].pt,taus[tauLooseHidx[1]].eta,taus[tauLooseHidx[1]].phi,taus[tauLooseHidx[1]].mass)
+            tautauMassLoose=(v1+v2).M()
+        elif (tauLooseHidx[0]>=0 and tauLooseHidx[1]>=0 and Category_LooseTausel==2):
+            Category_LoosePairs=2
+            v1.SetPtEtaPhiM(electrons[tauLooseHidx[0]].pt,electrons[tauLooseHidx[0]].eta,electrons[tauLooseHidx[0]].phi,0.511/1000.)
+            v2.SetPtEtaPhiM(taus[tauLooseHidx[1]].pt,taus[tauLooseHidx[1]].eta,taus[tauLooseHidx[1]].phi,taus[tauLooseHidx[1]].mass)
+            tautauMassLoose=(v1+v2).M()
+        elif (tauLooseHidx[0]>=0 and tauLooseHidx[1]>=0 and Category_LooseTausel==1):
+            Category_LoosePairs=1
+            v1.SetPtEtaPhiM(muons[tauLooseHidx[0]].pt,muons[tauLooseHidx[0]].eta,muons[tauLooseHidx[0]].phi,0.1056)
+            v2.SetPtEtaPhiM(taus[tauLooseHidx[1]].pt,taus[tauLooseHidx[1]].eta,taus[tauLooseHidx[1]].phi,taus[tauLooseHidx[1]].mass)
+            tautauMassLoose=(v1+v2).M()
+            
+        if (tauAllHidx[0]>=0 and tauAllHidx[1]>=0 and Category_lveto==3):
+            Category_AllPairs=3
+            v1.SetPtEtaPhiM(taus[tauAllHidx[0]].pt,taus[tauAllHidx[0]].eta,taus[tauAllHidx[0]].phi,taus[tauAllHidx[0]].mass)
+            v2.SetPtEtaPhiM(taus[tauAllHidx[1]].pt,taus[tauAllHidx[1]].eta,taus[tauAllHidx[1]].phi,taus[tauAllHidx[1]].mass)
+            tautauMassAll=(v1+v2).M()
+        elif (tauAllHidx[0]>=0 and tauAllHidx[1]>=0 and Category_lveto==2):
+            Category_AllPairs=2
+            v1.SetPtEtaPhiM(electrons[tauAllHidx[0]].pt,electrons[tauAllHidx[0]].eta,electrons[tauAllHidx[0]].phi,0.511/1000.)
+            v2.SetPtEtaPhiM(taus[tauAllHidx[1]].pt,taus[tauAllHidx[1]].eta,taus[tauAllHidx[1]].phi,taus[tauAllHidx[1]].mass)
+            tautauMassAll=(v1+v2).M()
+        elif (tauAllHidx[0]>=0 and tauAllHidx[1]>=0 and Category_lveto==1):
+            Category_AllPairs=1
+            v1.SetPtEtaPhiM(muons[tauAllHidx[0]].pt,muons[tauAllHidx[0]].eta,muons[tauAllHidx[0]].phi,0.1056)
+            v2.SetPtEtaPhiM(taus[tauAllHidx[1]].pt,taus[tauAllHidx[1]].eta,taus[tauAllHidx[1]].phi,taus[tauAllHidx[1]].mass)
+            tautauMassAll=(v1+v2).M()
             
 
         self.out.fillBranch("tautauMass",tautauMass)
+        self.out.fillBranch("tautauMassLoose",tautauMassLoose)
+        self.out.fillBranch("tautauMassAll",tautauMassAll)
+        
         self.out.fillBranch("ggMass",ggMass)
         self.out.fillBranch("muonNumber",muonNumber)
         self.out.fillBranch("electronNumber",electronNumber)
@@ -279,6 +394,9 @@ class HHggtautauProducer(Module):
         self.out.fillBranch("Category_lveto",  Category_lveto);
         self.out.fillBranch("Category_tausel",  Category_tausel);
         self.out.fillBranch("Category_pairs",  Category_pairs);
+        self.out.fillBranch("Category_LooseTausel",  Category_LooseTausel);
+        self.out.fillBranch("Category_LoosePairs",  Category_LoosePairs);
+        self.out.fillBranch("Category_AllPairs",  Category_AllPairs);
         
         return True
     

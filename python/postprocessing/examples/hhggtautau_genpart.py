@@ -197,7 +197,7 @@ class HHggtautauGenLevel(Module):
                     genEleTauPlus.append(genP)
                 if((genP.pdgId==-11) and self.isTauDecayProduct(genP.statusFlags) and (abs(genParticles[genP.genPartIdxMother].pdgId)==15)):
                     genEleTauMinus.append(genP)
-                if(genP.pdgId==22 and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,22)):
+                if(genP.pdgId==22 and self.isLastCopy(genP.statusFlags) and genP.status==1 and self.fromH(genParticles, genP,22)):
                     genHphotons.append(genP)
             
                     
