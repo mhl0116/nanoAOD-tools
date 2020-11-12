@@ -129,8 +129,8 @@ class HHggtautauGenLevel(Module):
         if (genP.genPartIdxMother > -1):
             if (genparticles[genP.genPartIdxMother].pdgId==25 and genP.pdgId==origin):
                 return True
-            else:
-                return self.fromH(genparticles, genparticles[genP.genPartIdxMother], origin)
+            ##else:
+                ##return self.fromH(genparticles, genparticles[genP.genPartIdxMother], origin)
         return False
     
     
@@ -185,9 +185,9 @@ class HHggtautauGenLevel(Module):
             
             
             for genP in genParticles:
-                if((genP.pdgId==15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,15)):
+                if((genP.pdgId==15) and self.isLastCopy(genP.statusFlags) and genP.status==2 and self.fromH(genParticles, genP,15)):
                     genHtausPlus=genP
-                if((genP.pdgId==-15) and self.isLastCopy(genP.statusFlags) and self.fromH(genParticles, genP,-15)):
+                if((genP.pdgId==-15) and self.isLastCopy(genP.statusFlags) and genP.status==2 and self.fromH(genParticles, genP,-15)):
                     genHtausMinus=genP
                 if((genP.pdgId==13) and self.isTauDecayProduct(genP.statusFlags) and (abs(genParticles[genP.genPartIdxMother].pdgId)==15)):
                     genMuTauPlus.append(genP)
