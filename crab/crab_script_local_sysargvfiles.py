@@ -18,7 +18,7 @@ from PhysicsTools.NanoAODTools.postprocessing.modules.common.muonScaleResProduce
 
 #p=PostProcessor(".",inputFiles(),"Jet_pt>200",modules=[exampleModuleConstr()],provenance=True,fwkJobReport=True,jsonInput=runsAndLumis())
 
-selection='''Sum$(Photon_pt > 18 && abs(Photon_eta)<2.5) > 1  &&(Sum$(Electron_pt > 10 && abs(Electron_eta<2.5)) || Sum$(Muon_pt > 10 && abs(Muon_eta<2.4)) || Sum$(Tau_pt > 15 && abs(Tau_eta<2.4)) > 1)'''
+selection='''Sum$(Photon_pt > 18 && abs(Photon_eta)<2.5) > 1  &&(Sum$(Electron_pt > 10 && abs(Electron_eta<2.5)) || Sum$(Muon_pt > 10 && abs(Muon_eta<2.4)) || Sum$(Tau_pt > 15 && abs(Tau_eta<2.4)) )'''
 
 files=["/hadoop/cms/store/user/hmei/nanoaod_runII/HHggtautau/HHggtautau_Era2018_private_v2_20201005/test_nanoaod_1.root"]
 import sys
@@ -31,7 +31,7 @@ files=files.split(",")
 
 #quit()
 
-PrefCorr2016 = lambda : PrefCorr("L1prefiring_jetpt_2016BtoH.root", "L1prefiring_jetpt_2016BtoH", "L1prefiring_photonpt_2016BtoH.root", "L1prefiring_photonpt_2016BtoH")
+PrefireCorr2016 = lambda : PrefCorr("L1prefiring_jetpt_2016BtoH.root", "L1prefiring_jetpt_2016BtoH", "L1prefiring_photonpt_2016BtoH.root", "L1prefiring_photonpt_2016BtoH")
 #jetmetUncertainties2016
 #puAutoWeight_2016
 #muonScaleRes2016
@@ -45,13 +45,29 @@ PrefireCorr2017 = lambda : PrefCorr('L1prefiring_jetpt_2017BtoF.root', 'L1prefir
 #puAutoWeight_2018
 #muonScaleRes2018
 
-
-p=PostProcessor(".",files,       
-                  selection.replace('\n',''),
-                  branchsel="keep_and_drop.txt",
-                  outputbranchsel="keep_and_drop.txt",
-                  modules=[puAutoWeight_2018(),jetmetUncertainties2018(),muonScaleRes2018(),HHggtauatauModule2018()],#, HHggtautauGenLevelModule()],
-                  provenance=True)
+if sys.argv[2]=="mc18":
+    p=PostProcessor(".",files,       
+                    selection.replace('\n',''),
+                    branchsel="keep_and_drop.txt",
+                    outputbranchsel="keep_and_drop.txt",
+                    modules=[puAutoWeight_2018(),jetmetUncertainties2018(),muonScaleRes2018(),HHggtauatauModule2018(), HHggtautauGenLevelModule()],
+                    provenance=True)
+elif sys.argv[2]=="mc17":
+    p=PostProcessor(".",files,       
+                    selection.replace('\n',''),
+                    branchsel="keep_and_drop.txt",
+                    outputbranchsel="keep_and_drop.txt",
+                    modules=[puAutoWeight_2017(),jetmetUncertainties2017(),muonScaleRes2017(),HHggtauatauModule2017(), HHggtautauGenLevelModule(),PrefireCorr2017()],
+                    provenance=True)    
+elif sys.argv[2]=="mc16":
+        p=PostProcessor(".",files,       
+                    selection.replace('\n',''),
+                    branchsel="keep_and_drop.txt",
+                    outputbranchsel="keep_and_drop.txt",
+                    modules=[puAutoWeight_2016(),jetmetUncertainties2016(),muonScaleRes2016(),HHggtauatauModule2016(), HHggtautauGenLevelModule(),PrefireCorr2016()],
+                    provenance=True)    
+else:
+    quit()
 
 print p.branchsel._ops
 print p.outputbranchsel._ops
