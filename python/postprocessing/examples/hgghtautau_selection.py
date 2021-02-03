@@ -153,7 +153,7 @@ class HHggtautauProducer(Module):
                     charge=tausForHiggs[0].charge
             if (charge!=0):
                 for tauCand in tausForHiggs:
-                    if (charge!=tauCand.charge and tauCand.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]):
+                    if (charge*tauCand.charge<0 and tauCand.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]):
                         tauHidx[1] = taus.index(tauCand)
 
         # visible mass etc for leptonic categories
@@ -170,7 +170,7 @@ class HHggtautauProducer(Module):
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==3):
             Category_pairs=3
             tautauMass=self.invMass(taus[tauHidx[0]],taus[tauHidx[1]])
-            tautauMass=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         taus[index1].decayMode, taus[index2].decayMode, Category_pairs, 0, 
                                         taus[index1].pt,taus[index1].eta,taus[index1].phi,taus[index1].mass, 
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
@@ -178,7 +178,7 @@ class HHggtautauProducer(Module):
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==2):
             Category_pairs=2
             tautauMass=self.invMass(electrons[tauHidx[0]],taus[tauHidx[1]],0.511/1000.)
-            tautauMass=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         1, taus[index2].decayMode, Category_pairs, 0, 
                                         electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
@@ -186,7 +186,7 @@ class HHggtautauProducer(Module):
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==1):
             Category_pairs=1
             tautauMass=self.invMass(muons[tauHidx[0]],taus[tauHidx[1]])
-            tautauMass=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         1, taus[index2].decayMode, Category_pairs, 0, 
                                         muons[index1].pt,muons[index1].eta,muons[index1].phi,0.10566,
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
