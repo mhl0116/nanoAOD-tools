@@ -43,31 +43,6 @@ class HggSelector(Module):
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
 
-    def invMass(self, obj1, obj2, mass1=-1, mass2=-1):
-        j1 = ROOT.TLorentzVector()
-        j2 = ROOT.TLorentzVector()
-        if (mass1==-1):
-            j1.SetPtEtaPhiM(obj1.pt, obj1.eta, obj1.phi, obj1.mass)
-        else:
-            j1.SetPtEtaPhiM(obj1.pt, obj1.eta, obj1.phi, mass1)
-        if (mass2==-1):
-            j2.SetPtEtaPhiM(obj2.pt, obj2.eta, obj2.phi, obj2.mass)
-        else:
-            j2.SetPtEtaPhiM(obj2.pt, obj2.eta, obj2.phi, mass2)        
-        return (j1+j2).M()
-        
-    
-    def elid(self, el, wp, noiso=False):
-        if (wp == "80"):
-            return el.mvaFall17V2Iso_WP80
-        elif (wp == "90"):
-            return el.mvaFall17V2Iso_WP90
-        elif (wp == "80" and noiso==True):
-            return el.mvaFall17V2noIso_WP80
-        elif (wp == "90" and noiso==True):
-            return el.mvaFall17V2noIso_WP90
-        
-        
     def useLowR9(self, photon, rho, isEB):
         if (isEB):        
             if ( (photon.sieie >= 0.015) ): 
