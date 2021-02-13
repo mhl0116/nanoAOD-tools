@@ -38,7 +38,10 @@ class HggSelector(Module):
         self.out.branch("passedHPhotons","B")
         self.out.branch("passedDigammaPair","B")
         self.out.branch("gHidx",  "I", 2);    
-        self.out.branch("ggMass",  "F");        
+        self.out.branch("gg_mass", "F");  
+        self.out.branch("gg_pt",   "F"); 
+        self.out.branch("gg_eta",  "F"); 
+        self.out.branch("gg_phi",  "F"); 
         
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass
@@ -79,6 +82,10 @@ class HggSelector(Module):
         
         gHidx=[-1,-1]
         ggMass=-1
+        ggPt=-1
+        ggEta=-1
+        ggPhi=-1
+        
         
         pho_EB_highR9 = lambda x : (abs(x.eta) < 1.5 and x.r9 > 0.85)
         pho_EE_highR9 = lambda x : (abs(x.eta) > 1.5 and x.r9 > 0.9)
@@ -104,13 +111,25 @@ class HggSelector(Module):
             v1.SetPtEtaPhiM(photons[gHidx[0]].pt,photons[gHidx[0]].eta,photons[gHidx[0]].phi,0)
             v2.SetPtEtaPhiM(photons[gHidx[1]].pt,photons[gHidx[1]].eta,photons[gHidx[1]].phi,0)
             ggMass=(v1+v2).M()
+            ggPt=(v1+v2).Pt()
+            ggEta=(v1+v2).Eta()
+            ggPhi=(v1+v2).Phi()
 
-        self.out.fillBranch("ggMass",ggMass)      
+        self.out.fillBranch("gg_mass",ggMass)
+        self.out.fillBranch("gg_pt",ggPt)
+        self.out.fillBranch("gg_eta",ggEta)
+        self.out.fillBranch("gg_phi",ggPhi)
+        
         self.out.fillBranch("passedGoodPhotons",passedGoodPhotons)
         self.out.fillBranch("passedHPhotons",passedHPhotons)
         self.out.fillBranch("passedDigammaPair",passedDigammaPair)
         self.out.fillBranch("gHidx",gHidx)
         
+        #selection, which can be omitted
+        if ggMass<100:
+          return False 
+        
+        #default
         return True
     
 

@@ -42,14 +42,43 @@ class HHggtautauProducer(Module):
         
         self.out = wrappedOutputTree
                 
-        self.out.branch("tautauMass"+self.postfix,  "F");   
+        self.out.branch("pt_tautau"+self.postfix,  "F");   
+        self.out.branch("eta_tautau"+self.postfix,  "F"); 
+        self.out.branch("phi_tautau"+self.postfix,  "F"); 
+        self.out.branch("m_tautau"+self.postfix,  "F"); 
+        self.out.branch("dR_tautau"+self.postfix,  "F");
+        
+        self.out.branch("pt_tautauSVFit"+self.postfix,  "F");   
+        self.out.branch("eta_tautauSVFit"+self.postfix,  "F"); 
+        self.out.branch("phi_tautauSVFit"+self.postfix,  "F"); 
+        self.out.branch("m_tautauSVFit"+self.postfix,  "F"); 
+        self.out.branch("dR_tautauSVFit"+self.postfix,  "F");
+        
+        self.out.branch("dR_ggtautau"+self.postfix,  "F");
+        self.out.branch("dPhi_ggtautau"+self.postfix,  "F");
+        self.out.branch("dR_ggtautauSVFit"+self.postfix,  "F");
+        self.out.branch("dPhi_ggtautauSVFit"+self.postfix,  "F");
+        
+        self.out.branch("selectedTau_ptSVFit",  "F", 2);   
+        self.out.branch("selectedTau_etaSVFit",  "F", 2); 
+        self.out.branch("selectedTau_phiSVFit",  "F", 2); 
+        self.out.branch("selectedTau_mSVFit",  "F", 2);
+        
+        self.out.branch("selectedMuon_ptSVFit",  "F", 2);   
+        self.out.branch("selectedMuon_etaSVFit",  "F", 2); 
+        self.out.branch("selectedMuon_phiSVFit",  "F", 2); 
+        self.out.branch("selectedMuon_mSVFit",  "F", 2); 
+        
+        self.out.branch("selectedElectron_ptSVFit",  "F", 2);   
+        self.out.branch("selectedElectron_etaSVFit",  "F", 2); 
+        self.out.branch("selectedElectron_phiSVFit",  "F", 2); 
+        self.out.branch("selectedElectron_mSVFit",  "F", 2); 
+        
         self.out.branch("tauHidx"+self.postfix,  "I", 2);
         self.out.branch("Category_tausel"+self.postfix,   "I");
         self.out.branch("Category_pairs"+self.postfix,   "I");
         
         self.out.branch("Jet_Filter"+self.postfix,  "O", 1, "nJet");    
-        
-        self.out.branch("tautauMassSVFit"+self.postfix,  "F");
 
         
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
@@ -170,7 +199,7 @@ class HHggtautauProducer(Module):
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==3):
             Category_pairs=3
             tautauMass=self.invMass(taus[tauHidx[0]],taus[tauHidx[1]])
-            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         taus[index1].decayMode, taus[index2].decayMode, Category_pairs, 0, 
                                         taus[index1].pt,taus[index1].eta,taus[index1].phi,taus[index1].mass, 
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
@@ -178,7 +207,7 @@ class HHggtautauProducer(Module):
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==2):
             Category_pairs=2
             tautauMass=self.invMass(electrons[tauHidx[0]],taus[tauHidx[1]],0.511/1000.)
-            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         1, taus[index2].decayMode, Category_pairs, 0, 
                                         electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
@@ -186,7 +215,7 @@ class HHggtautauProducer(Module):
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==1):
             Category_pairs=1
             tautauMass=self.invMass(muons[tauHidx[0]],taus[tauHidx[1]])
-            tautauMassSVFit=ROOT.SVfit_mass( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
                                         1, taus[index2].decayMode, Category_pairs, 0, 
                                         muons[index1].pt,muons[index1].eta,muons[index1].phi,0.10566,
                                         taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
@@ -195,12 +224,24 @@ class HHggtautauProducer(Module):
         # visible mass etc for leptonic categories
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==4):
             tautauMass=self.invMass(muons[tauHidx[0]],muons[tauHidx[1]])
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        1, taus[index2].decayMode, Category_pairs, 0, 
+                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
 
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==5):
             tautauMass=self.invMass(electrons[tauHidx[0]],electrons[tauHidx[1]],0.511/1000.,0.511/1000.)
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        1, taus[index2].decayMode, Category_pairs, 0, 
+                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
 
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==6):
             tautauMass=self.invMass(electrons[tauHidx[0]],muons[tauHidx[1]],0.511/1000.)
+            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        1, taus[index2].decayMode, Category_pairs, 0, 
+                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        muons[index2].pt,muons[index2].eta,muons[index2].phi,muons[index2].mass)
 
         for i in range(len(jets)):
             if (Category_pairs==3):
