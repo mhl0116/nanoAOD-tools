@@ -1,5 +1,10 @@
 #this is not mean to be run locally
 #
+for i in "$@"
+  do echo $i, "  UUU " 
+done
+
+
 echo Check if TTY
 if [ "`tty`" != "not a tty" ]; then
   echo "YOU SHOULD NOT RUN THIS IN INTERACTIVE, IT DELETES YOUR LOCAL FILES"

@@ -41,7 +41,7 @@ PrefireCorr2017 = lambda : PrefCorr('L1prefiring_jetpt_2017BtoF.root', 'L1prefir
 import sys
 print sys.argv
 
-if sys.argv[2]=="mc16":
+if "mc16" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
@@ -52,7 +52,7 @@ if sys.argv[2]=="mc16":
                     fwkJobReport=True, #NOT IN LOCAL
                     jsonInput=runsAndLumis() #NOT IN LOCAL
                     )
-elif sys.argv[2]=="mc17":
+elif "mc17" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
@@ -63,7 +63,7 @@ elif sys.argv[2]=="mc17":
                     fwkJobReport=True, #NOT IN LOCAL
                     jsonInput=runsAndLumis() #NOT IN LOCAL
                     )
-elif sys.argv[2]=="mc18":
+elif "mc18" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
@@ -74,7 +74,7 @@ elif sys.argv[2]=="mc18":
                     fwkJobReport=True, #NOT IN LOCAL
                     jsonInput=runsAndLumis() #NOT IN LOCAL
                     )
-elif sys.argv[2]=="data16":
+elif "data16" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
@@ -85,7 +85,7 @@ elif sys.argv[2]=="data16":
                     fwkJobReport=True, #NOT IN LOCAL
                     jsonInput=runsAndLumis() #NOT IN LOCAL
                     )
-elif sys.argv[2]=="data17":
+elif "data17" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
@@ -96,7 +96,7 @@ elif sys.argv[2]=="data17":
                     fwkJobReport=True, #NOT IN LOCAL
                     jsonInput=runsAndLumis() #NOT IN LOCAL
                     )
-elif sys.argv[1]=="data18":
+elif "data18" in sys.argv[2]:
   p = PostProcessor(".", 
                     inputFiles(), #NOT IN LOCAL
                     selection.replace('\n',''),
