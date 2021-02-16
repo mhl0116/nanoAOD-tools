@@ -45,14 +45,14 @@ config.Data.userInputFiles = ['/store/user/hmei/nanoaod_runII/HHggtautau/HHggtau
                               '/store/user/hmei/nanoaod_runII/HHggtautau/HHggtautau_Era2018_private_v2_20201005/test_nanoaod_10.root',
                               '/store/user/hmei/nanoaod_runII/HHggtautau/HHggtautau_Era2018_private_v2_20201005/test_nanoaod_11.root',
                               '/store/user/hmei/nanoaod_runII/HHggtautau/HHggtautau_Era2018_private_v2_20201005/test_nanoaod_12.root',
-                             ]
+                             ] #override
 
-config.Data.outputPrimaryDataset = "HHggtautau_2018_private"
+config.Data.outputPrimaryDataset = "HHggtautau_2018_private" #override
 
 config.Data.splitting = 'FileBased'
 #config.Data.splitting = 'EventAwareLumiBased'
-config.Data.unitsPerJob = 10
-config.Data.totalUnits = 10
+config.Data.unitsPerJob = 15
+config.Data.totalUnits = 10 #override
 
 config.Data.outLFNDirBase = '/store/user/legianni/skimNano-Hggselection' # cannot getUsernameFromSiteDB
 config.Data.publication = False
@@ -65,12 +65,13 @@ config.Site.whitelist = ["T2_US_UCSD"] # i know where the files are!!!!
 
 from CRABAPI.RawCommand import crabCommand
 
+#from https://github.com/cmstas/HggAnalysisDev/tree/main/Skimming
 import sys
 sys.path.append(base+"/..//HggAnalysisDev/Skimming")
 from sa import *
 from allsamples import allsamples
 
-counter=100
+counter=0
 
 opds={}
 
@@ -102,9 +103,7 @@ for sample in allsamples:
       config.JobType.scriptArgs=["arg=data18"]
       path=data18[sample]
       opd=sample.split("-")[0]+"_private_data18"
-    
-    
-    
+
     if opd in opds:
       opds[opd]+=1
       opd=opd+"_"+str(opds[opd])
@@ -113,9 +112,10 @@ for sample in allsamples:
       opds[opd]=1
     print opd
     
+    # output primary dataset is necessary when working with private input
+    config.Data.outputPrimaryDataset=opd
     
-    config.Data.outputPrimaryDataset="DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8-20201021_private"#sample.replace(".","")
-    
+    #get files - it works at ucsd
     files=os.listdir(path)
     for i in range(len(files)):
       files[i]=path.replace("/hadoop/cms", "")+"/"+files[i]
@@ -124,10 +124,11 @@ for sample in allsamples:
     config.Data.userInputFiles=files
     config.Data.totalUnits = len(files)
     
-    config.General.requestName = 'skimNano-Hggselection'+sample[0:30]+"--"+str(counter)
+    config.General.requestName = 'skimNano-Hggselection'+sample[0:30].replace(".","")+"--"+str(counter)
     
     print "Submitting "+ sample, "nfiles ", len(files), "found at",  files[0:1], " extra ARG ", config.JobType.scriptArgs
-    #crabCommand('submit', config = config, dryrun = False) ## dryrun = True for local test
+    #print config
+    crabCommand('submit', config = config, dryrun = False) ## dryrun = True for local test
     print "DONE"
     
     counter+=1
