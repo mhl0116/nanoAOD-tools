@@ -38,10 +38,11 @@ class HHggtautauLepSelector(Module):
     def beginFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         
         self.out = wrappedOutputTree
-        self.out.branch("Category",   "I");
-        self.out.branch("Category_lveto",   "I");
+        self.out.branch("Categoryb",   "I");
+        self.out.branch("Category_lvetob",   "I");
         self.out.branch("taulepHidx","I", 2);
-        self.out.branch("Jet_lepFilter",  "O", 1, "nJet");
+        self.out.branch("Jet_Filter",  "O", 1, "nJet");
+        self.out.branch("Tau_Filter",  "O", 1, "nTau");
 
     def endFile(self, inputFile, outputFile, inputTree, wrappedOutputTree):
         pass       
@@ -62,6 +63,7 @@ class HHggtautauLepSelector(Module):
         muons = list(Collection(event, "Muon"))
         jets = list(Collection(event, "Jet"))        
         photons = list(Collection(event, "Photon"))
+        taus = list(Collection(event, "Tau"))
         gHidx = getattr(event, "gHidx")
         
         
@@ -78,14 +80,29 @@ class HHggtautauLepSelector(Module):
 
         #FOR VETOS
         lElectrons = [x for x in electrons if x.pt > 10 and (self.elid(x,"90") or (x.pfRelIso03_all < 0.3 and self.elid(x,"90", True)))  and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.5 and hphotonFilter(x) ] #electron ecal cracks?
-        lMuons = [x for x in muons if x.pt > 10 and x.pfRelIso04_all < 0.3 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.4 and hphotonFilter(x) ]
+        #lMuons = [x for x in muons if x.pt > 10 and x.pfRelIso04_all < 0.3 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.4 and hphotonFilter(x) ]
+        lMuons = [x for x in muons if x.pt > 10 and x.pfRelIso03_all < 0.3 and abs(x.dxy) < 0.045 and abs(x.dz) < 0.2 and abs(x.eta)<2.4 and hphotonFilter(x) ]
+        #spotted one difference pfRelIso03_allpfRelIso03_all pfRelIso04_all
         
-                # these should be use for jet counting (for mva etc.)
+             
+        tElectrons=lElectrons
+        tMuons=lMuons
+ 
+        # these should be use for jet counting (for mva etc.)
         jetFilterFlags = [True]*len(jets)
+        tauFilterFlags = [True]*len(taus)
     
         for i in range(len(jets)):
             if (hphotonFilter4(jets[i])==0):
                 jetFilterFlags[i]=False
+                
+        for i in range(len(taus)):
+            if (hphotonFilter(taus[i])==0):
+              tauFilterFlags[i]=False
+            for lepton in lElectrons+lMuons:
+              if deltaR(lepton, taus[i])<0.2:
+                tauFilterFlags[i]=False
+            
     
         for lepton in lElectrons+lMuons:
             jetInd = lepton.jetIdx
@@ -94,18 +111,18 @@ class HHggtautauLepSelector(Module):
     
         #dilepton categories first
         for i in range(len(lMuons)):
-            if lMuons[i].pt>20:
+            if lMuons[i].pt>10:
                 for j in range(i+1,len(lMuons)):
-                    if (lMuons[j].pt>20 and lMuons[i].charge*lMuons[j].charge==-1):
+                    if (lMuons[j].pt>10 and lMuons[i].charge*lMuons[j].charge==-1):
                         Category=4
                 for j in range(0,len(lElectrons)):
-                    if (lElectrons[j].pt>20 and lMuons[i].charge*lElectrons[j].charge==-1):
+                    if (lElectrons[j].pt>10 and lMuons[i].charge*lElectrons[j].charge==-1):
                         Category=6
     
         for i in range(len(lElectrons)):
-            if lElectrons[i].pt>20:
+            if lElectrons[i].pt>10:
                 for j in range(i+1,len(lElectrons)):
-                    if (lElectrons[j].pt>20 and lElectrons[i].charge*lElectrons[j].charge==-1):
+                    if (lElectrons[j].pt>10 and lElectrons[i].charge*lElectrons[j].charge==-1):
                         Category=5
     
         #leptons of opposite charges not found (pt >20, loose ID, iso)
@@ -150,9 +167,10 @@ class HHggtautauLepSelector(Module):
 
 
         self.out.fillBranch("taulepHidx",  taulepHidx);
-        self.out.fillBranch("Category",  Category);
-        self.out.fillBranch("Category_lveto",  Category_lveto);
-        self.out.fillBranch("Jet_lepFilter",jetFilterFlags)
+        self.out.fillBranch("Categoryb",  Category);
+        self.out.fillBranch("Category_lvetob",  Category_lveto);
+        self.out.fillBranch("Jet_Filter",jetFilterFlags)
+        self.out.fillBranch("Tau_Filter",tauFilterFlags)
         
         return True
 

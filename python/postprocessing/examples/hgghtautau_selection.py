@@ -110,8 +110,8 @@ class HHggtautauProducer(Module):
         
         gHidx = getattr(event, "gHidx")
         tauHidx = getattr(event, "taulepHidx")
-        Category_lveto = getattr(event, "Category_lveto")
-        jetlepFilterFlags = getattr(event, "Jet_lepFilter")
+        Category_lveto = getattr(event, "Category_lvetob")
+        jetlepFilterFlags = getattr(event, "Jet_Filter")
         
         v1 = ROOT.TLorentzVector()
         v2 = ROOT.TLorentzVector()
@@ -128,29 +128,40 @@ class HHggtautauProducer(Module):
 
         deepTauId_vsJet={"Medium":16, "Loose":8, "VLoose":4, "VVLoose":2, "VVVLoose":1}
 
-        if Category_lveto==1:
-            #muonic decay
-            tausForHiggs = [x for x in taus if (x.pt>20 and abs(x.eta)<2.3 and x.idDecayModeNewDMs and 
-                                                x.idDeepTau2017v2p1VSe>=4 and #VLoose
-                                                x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] and #choosing the WP for one tau
-                                                x.idDeepTau2017v2p1VSmu>=8 and #Tight
-                                                abs(x.dz) < 0.2 and hphotonFilter(x))]       
+        #if Category_lveto==1:
+            ##muonic decay
+            #tausForHiggs = [x for x in taus if (x.pt>20 and abs(x.eta)<2.3 and x.idDecayModeNewDMs and 
+                                                #x.idDeepTau2017v2p1VSe>=4 and #VLoose
+                                                #x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] and #choosing the WP for one tau
+                                                #x.idDeepTau2017v2p1VSmu>=8 and #Tight
+                                                #abs(x.dz) < 0.2 and hphotonFilter(x))]       
         
-        elif Category_lveto==2:
-            #electron decay
-            tausForHiggs = [x for x in taus if (x.pt>20 and  abs(x.eta)<2.3 and x.idDecayModeNewDMs and 
-                                                x.idDeepTau2017v2p1VSe>=32 and #Tight
-                                                x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] and #choosing the WP for one tau
-                                                x.idDeepTau2017v2p1VSmu>=8 and #Tight
-                                                abs(x.dz) < 0.2 and hphotonFilter(x))]           
+        #elif Category_lveto==2:
+            ##electron decay
+            #tausForHiggs = [x for x in taus if (x.pt>20 and  abs(x.eta)<2.3 and x.idDecayModeNewDMs and 
+                                                #x.idDeepTau2017v2p1VSe>=32 and #Tight
+                                                #x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] and #choosing the WP for one tau
+                                                #x.idDeepTau2017v2p1VSmu>=8 and #Tight
+                                                #abs(x.dz) < 0.2 and hphotonFilter(x))]           
             
             
-        elif Category_lveto==3:
-            tausForHiggs = [x for x in taus if (x.pt>20 and abs(x.eta)<2.3  and x.idDecayModeNewDMs and 
-                                                x.idDeepTau2017v2p1VSe>=2 and #VVLoose
-                                                (x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] or x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]) and #choosing the WP for both tau
-                                                x.idDeepTau2017v2p1VSmu>=1 and #VLoose
-                                                abs(x.dz) < 0.2 and hphotonFilter(x))]
+        #elif Category_lveto==3:
+            #tausForHiggs = [x for x in taus if (x.pt>20 and abs(x.eta)<2.3  and x.idDecayModeNewDMs and 
+                                                #x.idDeepTau2017v2p1VSe>=2 and #VVLoose
+                                                #(x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] or x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]) and #choosing the WP for both tau
+                                                #x.idDeepTau2017v2p1VSmu>=1 and #VLoose
+                                                #abs(x.dz) < 0.2 and hphotonFilter(x))]
+                                                
+        #one channel only selection
+        tausForHiggs = [x for x in taus if (x.pt>20 and 
+                                            abs(x.eta)<2.3  and 
+                                            x.idDecayModeNewDMs and 
+                                            x.idDeepTau2017v2p1VSe>=2 and #VVLoose
+                                            (x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] or x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]) and #choosing the WP for both tau
+                                            x.idDeepTau2017v2p1VSmu>=1 and #VLoose
+                                            abs(x.dz) < 0.2 and 
+                                            x.Filter)
+                        ]
             
         
         if (Category_lveto==1 and len(tausForHiggs)>0):
@@ -164,14 +175,14 @@ class HHggtautauProducer(Module):
             tauToMuon = muons[tauHidx[0]] # assigned if running after lepton selection
             charge = tauToMuon.charge
             for j in range(len(tausForHiggs)):
-                if (charge!=tausForHiggs[j].charge):
+                if (charge!=tausForHiggs[j].charge and deltaR(tausForHiggs[j],tauToMuon)>0.2):
                     tauHidx[1] = taus.index(tausForHiggs[j])
                     
         elif (Category_tausel==2 and len(tausForHiggs)):
             tauToEle = electrons[tauHidx[0]] # assigned if running after lepton selection
             charge = tauToEle.charge
             for j in range(len(tausForHiggs)):
-                if (charge!=tausForHiggs[j].charge):
+                if (charge!=tausForHiggs[j].charge and deltaR(tausForHiggs[j],tauToEle)>0.2):
                     tauHidx[1] = taus.index(tausForHiggs[j])
         
         elif (Category_tausel==3):
@@ -179,7 +190,7 @@ class HHggtautauProducer(Module):
             for tauCand in tausForHiggs:
                 if (tauCand.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1]):
                     tauHidx[0] = taus.index(tauCand)
-                    charge=tausForHiggs[0].charge
+                    charge=tauCand.charge
             if (charge!=0):
                 for tauCand in tausForHiggs:
                     if (charge*tauCand.charge<0 and tauCand.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]):
@@ -223,25 +234,31 @@ class HHggtautauProducer(Module):
         
         # visible mass etc for leptonic categories
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==4):
+            Category_tausel=4
+            Category_pairs=4
             tautauMass=self.invMass(muons[tauHidx[0]],muons[tauHidx[1]])
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        1, taus[index2].decayMode, Category_pairs, 0, 
-                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
-                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        #1, taus[index2].decayMode, Category_pairs, 0, 
+                                        #electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        #taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
 
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==5):
+            Category_tausel=5
+            Category_pairs=5
             tautauMass=self.invMass(electrons[tauHidx[0]],electrons[tauHidx[1]],0.511/1000.,0.511/1000.)
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        1, taus[index2].decayMode, Category_pairs, 0, 
-                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
-                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        #1, taus[index2].decayMode, Category_pairs, 0, 
+                                        #electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        #taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
 
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_lveto==6):
+            Category_tausel=6
+            Category_pairs=6
             tautauMass=self.invMass(electrons[tauHidx[0]],muons[tauHidx[1]],0.511/1000.)
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        1, taus[index2].decayMode, Category_pairs, 0, 
-                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
-                                        muons[index2].pt,muons[index2].eta,muons[index2].phi,muons[index2].mass)
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+                                        #1, taus[index2].decayMode, Category_pairs, 0, 
+                                        #electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+                                        #muons[index2].pt,muons[index2].eta,muons[index2].phi,muons[index2].mass)
 
         for i in range(len(jets)):
             if (Category_pairs==3):
@@ -255,8 +272,8 @@ class HHggtautauProducer(Module):
 
         
         self.out.fillBranch("Jet_Filter"+self.postfix, jetFilterFlags)
-        self.out.fillBranch("tautauMassSVFit"+self.postfix, tautauMassSVFit)   
-        self.out.fillBranch("tautauMass"+self.postfix, tautauMass)   
+        self.out.fillBranch("m_tautauSVFit"+self.postfix, tautauMassSVFit)   
+        self.out.fillBranch("m_tautau"+self.postfix, tautauMass)   
         self.out.fillBranch("tauHidx"+self.postfix,  tauHidx)
         self.out.fillBranch("Category_tausel"+self.postfix, Category_tausel)
         self.out.fillBranch("Category_pairs"+self.postfix, Category_pairs)
