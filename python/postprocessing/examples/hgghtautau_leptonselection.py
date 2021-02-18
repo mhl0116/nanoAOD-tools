@@ -71,7 +71,7 @@ class HHggtautauLepSelector(Module):
         Category_lveto = -1
         taulepHidx=[-1,-1]
         
-        hphotonFilter = lambda j : ((deltaR(j,photons[gHidx[0]])>0.2 if gHidx[0]>0 else 1) and (deltaR(j,photons[gHidx[1]])>0.2 if gHidx[1]>0 else 1))
+        hphotonFilter = lambda j : ((deltaR(j,photons[gHidx[0]])>0.2 if gHidx[0]>=0 else 1) and (deltaR(j,photons[gHidx[1]])>0.2 if gHidx[1]>=0 else 1))
         hphotonFilter4 = lambda j : ((deltaR(j,photons[gHidx[0]])>0.4 if gHidx[0]>0 else 1) and (deltaR(j,photons[gHidx[1]])>0.4 if gHidx[1]>0 else 1))
 
         #FOR SIGNAL        
@@ -127,9 +127,9 @@ class HHggtautauLepSelector(Module):
     
         #leptons of opposite charges not found (pt >20, loose ID, iso)
         if Category<0: 
-            if (len(tMuons)==1):
+            if (len(lMuons)==1):
                 Category=1
-            elif (len(tElectrons)==1):
+            elif (len(lElectrons)==1):
                 Category=2
             elif(len(lMuons+lElectrons)==0):
                 Category=3
