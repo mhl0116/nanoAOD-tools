@@ -120,7 +120,7 @@ class HHggtautauProducer(Module):
         Category_tausel = -1
         Category_pairs = -1
 
-        hphotonFilter = lambda j : ((deltaR(j,photons[gHidx[0]])>0.2 if gHidx[0]>0 else 1) and (deltaR(j,photons[gHidx[1]])>0.2 if gHidx[1]>0 else 1))
+        hphotonFilter = lambda j : ((deltaR(j,photons[gHidx[0]])>0.2 if gHidx[0]>=0 else 1) and (deltaR(j,photons[gHidx[1]])>0.2 if gHidx[1]>=0 else 1))
         
         jetFilterFlags = jetlepFilterFlags
 
@@ -160,7 +160,7 @@ class HHggtautauProducer(Module):
                                             (x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau1] or x.idDeepTau2017v2p1VSjet>=deepTauId_vsJet[self.hadtau2]) and #choosing the WP for both tau
                                             x.idDeepTau2017v2p1VSmu>=1 and #VLoose
                                             abs(x.dz) < 0.2 and 
-                                            x.Filter)
+                                            hphotonFilter(x))
                         ]
             
         
@@ -210,26 +210,26 @@ class HHggtautauProducer(Module):
         if (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==3):
             Category_pairs=3
             tautauMass=self.invMass(taus[tauHidx[0]],taus[tauHidx[1]])
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        taus[index1].decayMode, taus[index2].decayMode, Category_pairs, 0, 
-                                        taus[index1].pt,taus[index1].eta,taus[index1].phi,taus[index1].mass, 
-                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            #                            taus[index1].decayMode, taus[index2].decayMode, Category_pairs, 0, 
+            #                            taus[index1].pt,taus[index1].eta,taus[index1].phi,taus[index1].mass, 
+            #                            taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
             
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==2):
             Category_pairs=2
             tautauMass=self.invMass(electrons[tauHidx[0]],taus[tauHidx[1]],0.511/1000.)
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        1, taus[index2].decayMode, Category_pairs, 0, 
-                                        electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
-                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            #                            1, taus[index2].decayMode, Category_pairs, 0, 
+            #                            electrons[index1].pt,electrons[index1].eta,electrons[index1].phi,0.51100e-3,
+            #                            taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass)
             
         elif (tauHidx[0]>=0 and tauHidx[1]>=0 and Category_tausel==1):
             Category_pairs=1
             tautauMass=self.invMass(muons[tauHidx[0]],taus[tauHidx[1]])
-            print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
-                                        1, taus[index2].decayMode, Category_pairs, 0, 
-                                        muons[index1].pt,muons[index1].eta,muons[index1].phi,0.10566,
-                                        taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
+            #print ROOT.SVfit_results( measuredMETx, measuredMETy, covMET_XX, covMET_XY, covMET_YY, 
+            #                            1, taus[index2].decayMode, Category_pairs, 0, 
+            #                            muons[index1].pt,muons[index1].eta,muons[index1].phi,0.10566,
+            #                            taus[index2].pt,taus[index2].eta,taus[index2].phi,taus[index2].mass )
 
         
         # visible mass etc for leptonic categories
